@@ -12,6 +12,8 @@ mp_hands = mp.solutions.hands
 IMAGE_WIDTH = 1280
 IMAGE_HEIGHT = 720
 
+shapes = []
+
 def rescale(x, y):
     disp_width = 540 - 80
     disp_height = 320 - 0
@@ -21,9 +23,32 @@ def rescale(x, y):
     new_y = y * 1100 / disp_height
     return new_x, new_y
 
+def hand_viz(image, hand_landmarks):
+
+    # Visualizing landmarks
+    mp_drawing.draw_landmarks(
+        image,
+        hand_landmarks,
+        mp_hands.HAND_CONNECTIONS,
+        mp_drawing_styles.get_default_hand_landmarks_style(),
+        mp_drawing_styles.get_default_hand_connections_style())
+    
+    return image
+
+# RENDER ALL SHAPES IN A RENDER FUNCTION
+# FOR ALL RECTANGLES, CHECK WHETHER ON_SEG
+#       IF ON SEG, REDO LOCK HAND 
+#       AFTER LOCK, MOVE COORDS OF REC BASED ON PREV LOC
+
+# HAVE TO FIGURE OUT A WAY TO UNLOCK HAND FROM A RECTANGLE
+# AND HAVE THE RECTANGLE STAY IN ITS NEW LOCATION.
+
 cap = cv.VideoCapture(0)
 cap.set(cv.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv.CAP_PROP_FRAME_HEIGHT, 720)
+
+prev_x = 0
+prev_y = 0
 
 with mp_hands.Hands(
     model_complexity=0,
@@ -49,33 +74,31 @@ with mp_hands.Hands(
 
     landmarks = []
     if results.multi_hand_landmarks:
-      
-      # Visualizing Hand Landmarks
-      for hand_landmarks in results.multi_hand_landmarks:
 
-        # Thumb pointer
-        t_x = hand_landmarks.landmark[4].x * IMAGE_WIDTH
-        t_y = hand_landmarks.landmark[4].y * IMAGE_HEIGHT
+        # Visualizing Hand Landmarks
+        for hand_landmarks in results.multi_hand_landmarks:
+        
+            # Thumb pointer
+            t_x = hand_landmarks.landmark[4].x * IMAGE_WIDTH
+            t_y = hand_landmarks.landmark[4].y * IMAGE_HEIGHT
 
-        # Index pointer
-        p_x = hand_landmarks.landmark[8].x * IMAGE_WIDTH
-        p_y = hand_landmarks.landmark[8].y * IMAGE_HEIGHT
+            # Index pointer
+            p_x = hand_landmarks.landmark[8].x * IMAGE_WIDTH
+            p_y = hand_landmarks.landmark[8].y * IMAGE_HEIGHT
 
-        #cv.circle(image,(int(p_x),int(p_y)), 40, (0,0,255), -1)
+            # Store prev so we can move a chosen shape
+            prev_x = int((t_x + p_x) / 2)
+            prev_y = int((t_y + p_y) / 2)
 
-        landmarks.append([int(t_x), int(t_y)])
-        landmarks.append([int(p_x), int(p_y)])
+            #cv.circle(image,(int(p_x),int(p_y)), 40, (0,0,255), -1)
 
-        # Visualizing landmarks
-        mp_drawing.draw_landmarks(
-            image,
-            hand_landmarks,
-            mp_hands.HAND_CONNECTIONS,
-            mp_drawing_styles.get_default_hand_landmarks_style(),
-            mp_drawing_styles.get_default_hand_connections_style())
+            landmarks.append([int(t_x), int(t_y)])
+            landmarks.append([int(p_x), int(p_y)])
+
+            image = hand_viz(image, hand_landmarks)
     
-        if len(landmarks) == 4:
-          if math.dist(landmarks[0], landmarks[1]) < 60 and math.dist(landmarks[2], landmarks[3]) < 60:
+    if len(landmarks) == 4:
+        if math.dist(landmarks[0], landmarks[1]) < 60 and math.dist(landmarks[2], landmarks[3]) < 60:
             l_midx = int((landmarks[0][0] + landmarks[1][0]) / 2)
             l_midy = int((landmarks[0][1] + landmarks[1][1]) / 2)
             r_midx = int((landmarks[2][0] + landmarks[3][0]) / 2)
