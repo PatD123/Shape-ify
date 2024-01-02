@@ -11,3 +11,10 @@ other kinds of shapes that the user wants (again, rectangles at the moment).
 
 ## Other features
 1. Delete Button - After creating too many shapes, it allows the user to delete all the shapes created by them.
+
+## How to run
+1. Create virtual environment
+2. Install requirements
+```
+pip install -r requirements.txt
+```
