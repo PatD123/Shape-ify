@@ -2,6 +2,7 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from mediapipe.framework.formats import landmark_pb2
+from Rectangle import Rectangle
 import math
 import cv2 as cv
 
@@ -35,6 +36,12 @@ def hand_viz(image, hand_landmarks):
     
     return image
 
+def render(image):
+    for shape in shapes:
+        cv.rectangle(image,shape.top_left,shape.bot_right,(0,255,0),3)
+    
+    return image
+
 # RENDER ALL SHAPES IN A RENDER FUNCTION
 # FOR ALL RECTANGLES, CHECK WHETHER ON_SEG
 #       IF ON SEG, REDO LOCK HAND 
@@ -49,6 +56,11 @@ cap.set(cv.CAP_PROP_FRAME_HEIGHT, 720)
 
 prev_x = 0
 prev_y = 0
+rec_top_left = []
+rec_top_right = []
+
+two_hand_closed = False
+one_hand_closed = False
 
 with mp_hands.Hands(
     model_complexity=0,
@@ -104,9 +116,17 @@ with mp_hands.Hands(
             r_midx = int((landmarks[2][0] + landmarks[3][0]) / 2)
             r_midy = int((landmarks[2][1] + landmarks[3][1]) / 2)
             cv.rectangle(image,(l_midx, l_midy),(r_midx, r_midy),(0,255,0),3)
-        
-    # Display the box we have to stay in
-    #cv.rectangle(image,(540,0),(80,320),(0,255,0),3)
+
+            two_hand_closed = True
+
+            rec_top_left = [l_midx, l_midy]
+            rec_top_right = [r_midx, r_midy]
+    elif two_hand_closed:
+        two_hand_closed = False
+        rect = Rectangle(rec_top_left, rec_top_right, 3)
+        shapes.append(rect)
+
+    image = render(image)
 
     # Flip the image horizontally for a selfie-view display.
     cv.imshow('MediaPipe Hands', cv.flip(image, 1))

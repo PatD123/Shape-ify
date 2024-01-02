@@ -3,9 +3,7 @@ class Rectangle:
         self.top_left = p1 
         self.bot_right = p2
         self.line_width = line_width
- 
-    def show(self):
-        pass
+        self.last_modified = -1
 
     def on_segment(self, p):
         #  
