@@ -23,6 +23,8 @@ rec_top_right = []
 two_hand_closed = False
 one_hand_closed = False
 
+hand_locked = -1
+
 def rescale(x, y):
     disp_width = 540 - 80
     disp_height = 320 - 0
@@ -45,6 +47,7 @@ def hand_viz(image, hand_landmarks):
     return image
 
 def render(image, landmarks):
+    global hand_locked
     dis_x = 0
     dis_y = 0
     midx = -1
@@ -52,13 +55,14 @@ def render(image, landmarks):
     if landmarks:
         midx = int((landmarks[0][0] + landmarks[1][0]) / 2)
         midy = int((landmarks[0][1] + landmarks[1][1]) / 2)
-    if one_hand_closed:
         dis_x = midx - prev_x
         dis_y = midy - prev_y
           
-    for shape in shapes:
-        if shape.on_segment([midx, midy]):
+    for i in range(len(shapes)):
+        shape = shapes[i]
+        if one_hand_closed and shape.on_segment([midx, midy]) or hand_locked == i:
             print("on seg")
+            hand_locked = i
             shape.move(dis_x, dis_y)
 
         cv.rectangle(image,shape.top_left,shape.bot_right,(0,255,0),3)
@@ -101,7 +105,7 @@ with mp_hands.Hands(
 
     landmarks = []
     if results.multi_hand_landmarks:
-
+        print(len(results.multi_hand_landmarks))
         # Visualizing Hand Landmarks
         for hand_landmarks in results.multi_hand_landmarks:
         
@@ -134,6 +138,7 @@ with mp_hands.Hands(
             rec_top_left = [l_midx, l_midy]
             rec_top_right = [r_midx, r_midy]
         elif two_hand_closed:
+            print(len(landmarks))
             two_hand_closed = False
             rect = Rectangle(rec_top_left, rec_top_right, 3)
             shapes.append(rect)
@@ -147,8 +152,10 @@ with mp_hands.Hands(
                 one_hand_closed = True
         else:
             one_hand_closed = False
+            hand_locked = -1
     else:
         one_hand_closed = False
+        hand_locked = -1
 
     image = render(image, landmarks)
 
