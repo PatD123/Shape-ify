@@ -18,3 +18,7 @@ other kinds of shapes that the user wants (again, rectangles at the moment).
 ```
 pip install -r requirements.txt
 ```
+3. Run *drawRect*
+```
+python drawRect.py
+```
