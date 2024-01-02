@@ -55,6 +55,10 @@ def midpt(p1, p2):
 def display_rectangle(image, shape):
     cv.rectangle(image,shape.top_left,shape.bot_right,shape.color,shape.line_width)
 
+def display_screen_names(image):
+    for shape in screen_shapes:
+        cv.putText(image, shape.name, (IMAGE_WIDTH - shape.bot_right[0] + 20, shape.top_left[1] + 30), cv.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+
 def render(image, landmarks):
     global hand_locked
     dis_x = 0
@@ -75,6 +79,9 @@ def render(image, landmarks):
         display_rectangle(image, shape)
 
     for screen_shape in screen_shapes:
+        if landmarks:
+            if screen_shape.in_rectangle(landmarks[1]):
+                shapes.clear()
         display_rectangle(image, screen_shape)
     
     return image
@@ -85,8 +92,7 @@ if __name__ == "__main__":
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, 720)
 
     # Create the permanent screen shapes
-    del_button = Rectangle([1280, 0], [1230, 50], (255, 0, 0), 3)
-    print(del_button.color)
+    del_button = Rectangle([1150, 0], [1280, 50], (255, 0, 0), 3, "Delete")
     screen_shapes.append(del_button)
 
     with mp_hands.Hands(
@@ -95,7 +101,6 @@ if __name__ == "__main__":
         min_tracking_confidence=0.5) as hands:
         while cap.isOpened():
             success, image = cap.read()
-            
             if not success:
                 print("Ignoring empty camera frame.")
                 # If loading a video, use 'break' instead of 'continue'.
@@ -144,7 +149,7 @@ if __name__ == "__main__":
                     rec_top_right = [r_midx, r_midy]
                 elif two_hand_closed:
                     two_hand_closed = False
-                    rect = Rectangle(rec_top_left, rec_top_right, (255, 0, 0), 3)
+                    rect = Rectangle(rec_top_left, rec_top_right, (0, 255, 0), 3)
                     shapes.append(rect)
 
             # Dragging a rectangle with one hand, 2 landmarks
@@ -161,12 +166,15 @@ if __name__ == "__main__":
                 hand_locked = -1
 
             image = render(image, landmarks)
+            image = cv.flip(image, 1)
+
+            display_screen_names(image)
 
             if landmarks:
                 prev_x, prev_y = midpt(landmarks[0], landmarks[1])
 
             # Flip the image horizontally for a selfie-view display.
-            cv.imshow('MediaPipe Hands', cv.flip(image, 1))
+            cv.imshow('MediaPipe Hands', image)
             if cv.waitKey(5) & 0xFF == 27:
                 break
 

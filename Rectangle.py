@@ -1,15 +1,22 @@
 class Rectangle:
-    def __init__(self, p1, p2, color, line_width):
+    def __init__(self, p1, p2, color, line_width, name=None):
         self.top_left = p1 
         self.bot_right = p2
         self.color = color
         self.line_width = line_width
+        self.name = name
 
     def move(self, dis_x, dis_y):
         self.top_left[0] += dis_x
         self.top_left[1] += dis_y
         self.bot_right[0] += dis_x
         self.bot_right[1] += dis_y
+
+    def in_rectangle(self, p):
+        if p[0] >= self.top_left[0] - self.line_width and p[0] <= self.bot_right[0] + self.line_width \
+           and p[1] >= self.top_left[1] - self.line_width and p[1] <= self.bot_right[1] + self.line_width:
+            return True
+        return False
 
     def on_segment(self, p):
         #  
