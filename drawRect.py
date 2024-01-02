@@ -15,6 +15,14 @@ IMAGE_HEIGHT = 720
 
 shapes = []
 
+prev_x = 0
+prev_y = 0
+rec_top_left = []
+rec_top_right = []
+
+two_hand_closed = False
+one_hand_closed = False
+
 def rescale(x, y):
     disp_width = 540 - 80
     disp_height = 320 - 0
@@ -36,8 +44,23 @@ def hand_viz(image, hand_landmarks):
     
     return image
 
-def render(image):
+def render(image, landmarks):
+    dis_x = 0
+    dis_y = 0
+    midx = -1
+    midy = -1
+    if landmarks:
+        midx = int((landmarks[0][0] + landmarks[1][0]) / 2)
+        midy = int((landmarks[0][1] + landmarks[1][1]) / 2)
+    if one_hand_closed:
+        dis_x = midx - prev_x
+        dis_y = midy - prev_y
+          
     for shape in shapes:
+        if shape.on_segment([midx, midy]):
+            print("on seg")
+            shape.move(dis_x, dis_y)
+
         cv.rectangle(image,shape.top_left,shape.bot_right,(0,255,0),3)
     
     return image
@@ -53,14 +76,6 @@ def render(image):
 cap = cv.VideoCapture(0)
 cap.set(cv.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv.CAP_PROP_FRAME_HEIGHT, 720)
-
-prev_x = 0
-prev_y = 0
-rec_top_left = []
-rec_top_right = []
-
-two_hand_closed = False
-one_hand_closed = False
 
 with mp_hands.Hands(
     model_complexity=0,
@@ -98,10 +113,6 @@ with mp_hands.Hands(
             p_x = hand_landmarks.landmark[8].x * IMAGE_WIDTH
             p_y = hand_landmarks.landmark[8].y * IMAGE_HEIGHT
 
-            # Store prev so we can move a chosen shape
-            prev_x = int((t_x + p_x) / 2)
-            prev_y = int((t_y + p_y) / 2)
-
             #cv.circle(image,(int(p_x),int(p_y)), 40, (0,0,255), -1)
 
             landmarks.append([int(t_x), int(t_y)])
@@ -109,8 +120,9 @@ with mp_hands.Hands(
 
             image = hand_viz(image, hand_landmarks)
     
+    # Creating a rectangle with two hands, 4 landmarks
     if len(landmarks) == 4:
-        if math.dist(landmarks[0], landmarks[1]) < 60 and math.dist(landmarks[2], landmarks[3]) < 60:
+        if math.dist(landmarks[0], landmarks[1]) < 30 and math.dist(landmarks[2], landmarks[3]) < 30:
             l_midx = int((landmarks[0][0] + landmarks[1][0]) / 2)
             l_midy = int((landmarks[0][1] + landmarks[1][1]) / 2)
             r_midx = int((landmarks[2][0] + landmarks[3][0]) / 2)
@@ -121,12 +133,28 @@ with mp_hands.Hands(
 
             rec_top_left = [l_midx, l_midy]
             rec_top_right = [r_midx, r_midy]
-    elif two_hand_closed:
-        two_hand_closed = False
-        rect = Rectangle(rec_top_left, rec_top_right, 3)
-        shapes.append(rect)
+        elif two_hand_closed:
+            two_hand_closed = False
+            rect = Rectangle(rec_top_left, rec_top_right, 3)
+            shapes.append(rect)
 
-    image = render(image)
+    # Dragging a rectangle with one hand, 2 landmarks
+    if len(landmarks) == 2:
+        if math.dist(landmarks[0], landmarks[1]) < 60:
+            if not one_hand_closed:
+                prev_x = int((landmarks[0][0] + landmarks[1][0]) / 2)
+                prev_y = int((landmarks[0][1] + landmarks[1][1]) / 2)
+                one_hand_closed = True
+        else:
+            one_hand_closed = False
+    else:
+        one_hand_closed = False
+
+    image = render(image, landmarks)
+
+    if landmarks:
+        prev_x = int((landmarks[0][0] + landmarks[1][0]) / 2)
+        prev_y = int((landmarks[0][1] + landmarks[1][1]) / 2)
 
     # Flip the image horizontally for a selfie-view display.
     cv.imshow('MediaPipe Hands', cv.flip(image, 1))
