@@ -46,6 +46,11 @@ def hand_viz(image, hand_landmarks):
     
     return image
 
+def midpt(p1, p2):
+    midx = int((p1[0] + p2[0]) / 2)
+    midy = int((p1[1] + p2[1]) / 2)
+    return midx, midy
+
 def render(image, landmarks):
     global hand_locked
     dis_x = 0
@@ -53,15 +58,13 @@ def render(image, landmarks):
     midx = -1
     midy = -1
     if landmarks:
-        midx = int((landmarks[0][0] + landmarks[1][0]) / 2)
-        midy = int((landmarks[0][1] + landmarks[1][1]) / 2)
+        midx, midy = midpt(landmarks[0], landmarks[1])
         dis_x = midx - prev_x
         dis_y = midy - prev_y
-          
+    
     for i in range(len(shapes)):
         shape = shapes[i]
         if one_hand_closed and shape.on_segment([midx, midy]) or hand_locked == i:
-            print("on seg")
             hand_locked = i
             shape.move(dis_x, dis_y)
 
@@ -127,10 +130,8 @@ with mp_hands.Hands(
     # Creating a rectangle with two hands, 4 landmarks
     if len(landmarks) == 4:
         if math.dist(landmarks[0], landmarks[1]) < 30 and math.dist(landmarks[2], landmarks[3]) < 30:
-            l_midx = int((landmarks[0][0] + landmarks[1][0]) / 2)
-            l_midy = int((landmarks[0][1] + landmarks[1][1]) / 2)
-            r_midx = int((landmarks[2][0] + landmarks[3][0]) / 2)
-            r_midy = int((landmarks[2][1] + landmarks[3][1]) / 2)
+            l_midx, l_midy = midpt(landmarks[0], landmarks[1])
+            r_midx, r_midy = midpt(landmarks[2], landmarks[3])
             cv.rectangle(image,(l_midx, l_midy),(r_midx, r_midy),(0,255,0),3)
 
             two_hand_closed = True
@@ -138,7 +139,6 @@ with mp_hands.Hands(
             rec_top_left = [l_midx, l_midy]
             rec_top_right = [r_midx, r_midy]
         elif two_hand_closed:
-            print(len(landmarks))
             two_hand_closed = False
             rect = Rectangle(rec_top_left, rec_top_right, 3)
             shapes.append(rect)
@@ -147,8 +147,7 @@ with mp_hands.Hands(
     if len(landmarks) == 2:
         if math.dist(landmarks[0], landmarks[1]) < 60:
             if not one_hand_closed:
-                prev_x = int((landmarks[0][0] + landmarks[1][0]) / 2)
-                prev_y = int((landmarks[0][1] + landmarks[1][1]) / 2)
+                prev_x, prev_y = midpt(landmarks[0], landmarks[1])
                 one_hand_closed = True
         else:
             one_hand_closed = False
@@ -160,8 +159,7 @@ with mp_hands.Hands(
     image = render(image, landmarks)
 
     if landmarks:
-        prev_x = int((landmarks[0][0] + landmarks[1][0]) / 2)
-        prev_y = int((landmarks[0][1] + landmarks[1][1]) / 2)
+        prev_x, prev_y = midpt(landmarks[0], landmarks[1])
 
     # Flip the image horizontally for a selfie-view display.
     cv.imshow('MediaPipe Hands', cv.flip(image, 1))

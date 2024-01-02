@@ -19,24 +19,16 @@ class Rectangle:
         #
 
         A_x = p[0] >= self.top_left[0] - self.line_width and p[0] <= self.top_left[0] + self.line_width
-        A_y = p[1] >= self.top_left[1] and p[1] <= self.bot_right[1]
-
-        B_x = p[0] >= self.top_left[0] and p[0] <= self.bot_right[0]
-        B_y = p[1] >= self.top_left[1] - self.line_width and p[1] <= self.top_left[1] + self.line_width
+        A_y = p[1] >= self.top_left[1] - self.line_width and p[1] <= self.top_left[1] + self.line_width
 
         C_x = p[0] >= self.bot_right[0] - self.line_width and p[0] <= self.bot_right[0] + self.line_width
-        C_y = p[1] >= self.top_left[1] and p[1] <= self.bot_right[1]
-
-        D_x = p[0] >= self.top_left[0] and p[0] <= self.bot_right[0]
-        D_y = p[1] >= self.bot_right[1] - self.line_width and p[1] <= self.bot_right[1] + self.line_width
+        C_y = p[1] >= self.bot_right[1] - self.line_width and p[1] <= self.bot_right[1] + self.line_width
 
         if A_x and A_y:
-            return True
-        if B_x and B_y:
+            #print("A")
             return True
         if C_x and C_y:
-            return True
-        if D_x and D_y:
+            #print("C")
             return True
         
         return False
