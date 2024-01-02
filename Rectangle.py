@@ -1,7 +1,8 @@
 class Rectangle:
-    def __init__(self, p1, p2, line_width):
+    def __init__(self, p1, p2, color, line_width):
         self.top_left = p1 
         self.bot_right = p2
+        self.color = color
         self.line_width = line_width
 
     def move(self, dis_x, dis_y):
@@ -25,10 +26,8 @@ class Rectangle:
         C_y = p[1] >= self.bot_right[1] - self.line_width and p[1] <= self.bot_right[1] + self.line_width
 
         if A_x and A_y:
-            #print("A")
             return True
         if C_x and C_y:
-            #print("C")
             return True
         
         return False

@@ -14,6 +14,7 @@ IMAGE_WIDTH = 1280
 IMAGE_HEIGHT = 720
 
 shapes = []
+screen_shapes = []
 
 prev_x = 0
 prev_y = 0
@@ -51,6 +52,9 @@ def midpt(p1, p2):
     midy = int((p1[1] + p2[1]) / 2)
     return midx, midy
 
+def display_rectangle(image, shape):
+    cv.rectangle(image,shape.top_left,shape.bot_right,shape.color,shape.line_width)
+
 def render(image, landmarks):
     global hand_locked
     dis_x = 0
@@ -68,102 +72,102 @@ def render(image, landmarks):
             hand_locked = i
             shape.move(dis_x, dis_y)
 
-        cv.rectangle(image,shape.top_left,shape.bot_right,(0,255,0),3)
+        display_rectangle(image, shape)
+
+    for screen_shape in screen_shapes:
+        display_rectangle(image, screen_shape)
     
     return image
-
-# RENDER ALL SHAPES IN A RENDER FUNCTION
-# FOR ALL RECTANGLES, CHECK WHETHER ON_SEG
-#       IF ON SEG, REDO LOCK HAND 
-#       AFTER LOCK, MOVE COORDS OF REC BASED ON PREV LOC
-
-# HAVE TO FIGURE OUT A WAY TO UNLOCK HAND FROM A RECTANGLE
-# AND HAVE THE RECTANGLE STAY IN ITS NEW LOCATION.
-
-cap = cv.VideoCapture(0)
-cap.set(cv.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv.CAP_PROP_FRAME_HEIGHT, 720)
-
-with mp_hands.Hands(
-    model_complexity=0,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5) as hands:
-  while cap.isOpened():
-    success, image = cap.read()
     
-    if not success:
-      print("Ignoring empty camera frame.")
-      # If loading a video, use 'break' instead of 'continue'.
-      continue
+if __name__ == "__main__":
+    cap = cv.VideoCapture(0)
+    cap.set(cv.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv.CAP_PROP_FRAME_HEIGHT, 720)
 
-    # To improve performance, optionally mark the image as not writeable to
-    # pass by reference.
-    image.flags.writeable = False
-    image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
-    results = hands.process(image)
+    # Create the permanent screen shapes
+    del_button = Rectangle([1280, 0], [1230, 50], (255, 0, 0), 3)
+    print(del_button.color)
+    screen_shapes.append(del_button)
 
-    # Draw the hand annotations on the image.
-    image.flags.writeable = True
-    image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
+    with mp_hands.Hands(
+        model_complexity=0,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5) as hands:
+        while cap.isOpened():
+            success, image = cap.read()
+            
+            if not success:
+                print("Ignoring empty camera frame.")
+                # If loading a video, use 'break' instead of 'continue'.
+                continue
 
-    landmarks = []
-    if results.multi_hand_landmarks:
-        print(len(results.multi_hand_landmarks))
-        # Visualizing Hand Landmarks
-        for hand_landmarks in results.multi_hand_landmarks:
-        
-            # Thumb pointer
-            t_x = hand_landmarks.landmark[4].x * IMAGE_WIDTH
-            t_y = hand_landmarks.landmark[4].y * IMAGE_HEIGHT
+            # To improve performance, optionally mark the image as not writeable to
+            # pass by reference.
+            image.flags.writeable = False
+            image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+            results = hands.process(image)
 
-            # Index pointer
-            p_x = hand_landmarks.landmark[8].x * IMAGE_WIDTH
-            p_y = hand_landmarks.landmark[8].y * IMAGE_HEIGHT
+            # Draw the hand annotations on the image.
+            image.flags.writeable = True
+            image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
 
-            #cv.circle(image,(int(p_x),int(p_y)), 40, (0,0,255), -1)
+            landmarks = []
+            if results.multi_hand_landmarks:
+                # Visualizing Hand Landmarks
+                for hand_landmarks in results.multi_hand_landmarks:
+                
+                    # Thumb pointer
+                    t_x = hand_landmarks.landmark[4].x * IMAGE_WIDTH
+                    t_y = hand_landmarks.landmark[4].y * IMAGE_HEIGHT
 
-            landmarks.append([int(t_x), int(t_y)])
-            landmarks.append([int(p_x), int(p_y)])
+                    # Index pointer
+                    p_x = hand_landmarks.landmark[8].x * IMAGE_WIDTH
+                    p_y = hand_landmarks.landmark[8].y * IMAGE_HEIGHT
 
-            image = hand_viz(image, hand_landmarks)
-    
-    # Creating a rectangle with two hands, 4 landmarks
-    if len(landmarks) == 4:
-        if math.dist(landmarks[0], landmarks[1]) < 30 and math.dist(landmarks[2], landmarks[3]) < 30:
-            l_midx, l_midy = midpt(landmarks[0], landmarks[1])
-            r_midx, r_midy = midpt(landmarks[2], landmarks[3])
-            cv.rectangle(image,(l_midx, l_midy),(r_midx, r_midy),(0,255,0),3)
+                    #cv.circle(image,(int(p_x),int(p_y)), 40, (0,0,255), -1)
 
-            two_hand_closed = True
+                    landmarks.append([int(t_x), int(t_y)])
+                    landmarks.append([int(p_x), int(p_y)])
 
-            rec_top_left = [l_midx, l_midy]
-            rec_top_right = [r_midx, r_midy]
-        elif two_hand_closed:
-            two_hand_closed = False
-            rect = Rectangle(rec_top_left, rec_top_right, 3)
-            shapes.append(rect)
+                    image = hand_viz(image, hand_landmarks)
+            
+            # Creating a rectangle with two hands, 4 landmarks
+            if len(landmarks) == 4:
+                if math.dist(landmarks[0], landmarks[1]) < 50 and math.dist(landmarks[2], landmarks[3]) < 50:
+                    l_midx, l_midy = midpt(landmarks[0], landmarks[1])
+                    r_midx, r_midy = midpt(landmarks[2], landmarks[3])
+                    cv.rectangle(image,(l_midx, l_midy),(r_midx, r_midy),(0,255,0),3)
 
-    # Dragging a rectangle with one hand, 2 landmarks
-    if len(landmarks) == 2:
-        if math.dist(landmarks[0], landmarks[1]) < 60:
-            if not one_hand_closed:
+                    two_hand_closed = True
+
+                    rec_top_left = [l_midx, l_midy]
+                    rec_top_right = [r_midx, r_midy]
+                elif two_hand_closed:
+                    two_hand_closed = False
+                    rect = Rectangle(rec_top_left, rec_top_right, (255, 0, 0), 3)
+                    shapes.append(rect)
+
+            # Dragging a rectangle with one hand, 2 landmarks
+            if len(landmarks) == 2:
+                if math.dist(landmarks[0], landmarks[1]) < 80:
+                    if not one_hand_closed:
+                        prev_x, prev_y = midpt(landmarks[0], landmarks[1])
+                        one_hand_closed = True
+                else:
+                    one_hand_closed = False
+                    hand_locked = -1
+            else:
+                one_hand_closed = False
+                hand_locked = -1
+
+            image = render(image, landmarks)
+
+            if landmarks:
                 prev_x, prev_y = midpt(landmarks[0], landmarks[1])
-                one_hand_closed = True
-        else:
-            one_hand_closed = False
-            hand_locked = -1
-    else:
-        one_hand_closed = False
-        hand_locked = -1
 
-    image = render(image, landmarks)
+            # Flip the image horizontally for a selfie-view display.
+            cv.imshow('MediaPipe Hands', cv.flip(image, 1))
+            if cv.waitKey(5) & 0xFF == 27:
+                break
 
-    if landmarks:
-        prev_x, prev_y = midpt(landmarks[0], landmarks[1])
-
-    # Flip the image horizontally for a selfie-view display.
-    cv.imshow('MediaPipe Hands', cv.flip(image, 1))
-    if cv.waitKey(5) & 0xFF == 27:
-      break
-cap.release()
-    
+    cap.release()
