@@ -1,10 +1,13 @@
 import mediapipe as mp
+import math
+import cv2 as cv
+import numpy as np
+
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from mediapipe.framework.formats import landmark_pb2
 from Rectangle import Rectangle
-import math
-import cv2 as cv
+from Line import Line
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -18,13 +21,15 @@ screen_shapes = []
 
 prev_x = 0
 prev_y = 0
-rec_top_left = []
-rec_top_right = []
+top_left = []
+top_right = []
 
 two_hand_closed = False
 one_hand_closed = False
 
 hand_locked = -1
+
+shape_choice = 0
 
 def rescale(x, y):
     disp_width = 540 - 80
@@ -52,8 +57,11 @@ def midpt(p1, p2):
     midy = int((p1[1] + p2[1]) / 2)
     return midx, midy
 
-def display_rectangle(image, shape):
-    cv.rectangle(image,shape.top_left,shape.bot_right,shape.color,shape.line_width)
+def display_shape(image, shape):
+    if shape.type == "Rectangle":
+        cv.rectangle(image,shape.top_left,shape.bot_right,shape.color,shape.line_width)
+    elif shape.type == "Line":
+        cv.line(image, shape.p1, shape.p2, shape.color, shape.line_width)
 
 def display_screen_names(image):
     for shape in screen_shapes:
@@ -76,17 +84,18 @@ def render(image, landmarks):
             hand_locked = i
             shape.move(dis_x, dis_y)
 
-        display_rectangle(image, shape)
+        display_shape(image, shape)
 
     for screen_shape in screen_shapes:
         if landmarks:
             if screen_shape.in_rectangle(landmarks[1]):
                 shapes.clear()
-        display_rectangle(image, screen_shape)
+        display_shape(image, screen_shape)
     
     return image
     
 if __name__ == "__main__":
+
     cap = cv.VideoCapture(0)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, 720)
@@ -141,16 +150,24 @@ if __name__ == "__main__":
                 if math.dist(landmarks[0], landmarks[1]) < 50 and math.dist(landmarks[2], landmarks[3]) < 50:
                     l_midx, l_midy = midpt(landmarks[0], landmarks[1])
                     r_midx, r_midy = midpt(landmarks[2], landmarks[3])
-                    cv.rectangle(image,(l_midx, l_midy),(r_midx, r_midy),(0,255,0),3)
+                    
+                    if shape_choice == 0:
+                        cv.rectangle(image,(l_midx, l_midy),(r_midx, r_midy),(0,255,0),3)
+                    else:
+                        cv.line(image,(l_midx, l_midy),(r_midx, r_midy),(0,255,0),3)
 
                     two_hand_closed = True
 
-                    rec_top_left = [l_midx, l_midy]
-                    rec_top_right = [r_midx, r_midy]
+                    top_left = [l_midx, l_midy]
+                    top_right = [r_midx, r_midy]
                 elif two_hand_closed:
                     two_hand_closed = False
-                    rect = Rectangle(rec_top_left, rec_top_right, (0, 255, 0), 3)
-                    shapes.append(rect)
+                    shape = None
+                    if shape_choice == 0:
+                        shape = Rectangle(top_left, top_right, (0, 255, 0), 3)
+                    else:
+                        shape = Line(top_left, top_right, (0, 255, 0), 3)
+                    shapes.append(shape)
 
             # Dragging a rectangle with one hand, 2 landmarks
             if len(landmarks) == 2:
