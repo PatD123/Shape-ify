@@ -29,7 +29,7 @@ one_hand_closed = False
 
 hand_locked = -1
 
-shape_choice = 0
+shape_choice = 1
 
 def rescale(x, y):
     disp_width = 540 - 80
@@ -95,7 +95,6 @@ def render(image, landmarks):
     return image
     
 if __name__ == "__main__":
-
     cap = cv.VideoCapture(0)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, 720)

@@ -20,21 +20,23 @@ class Line:
 
         # 1) Find ortho proj of p onto NM (P1 - P2). Find the actual point on the line.
         NM = np.array([self.p2[0] - self.p1[0],
-              self.p2[1] - self.p2[1]])
+              self.p2[1] - self.p1[1]])
         NM_norm = np.linalg.norm(NM)
         NM_unit = NM / NM_norm
 
         NP = [p[0] - self.p1[0], p[1] - self.p1[1]]
-        P_ortho = np.dot(NP, NM_unit) * NM_unit
+        P_ortho_vec = np.dot(NP, NM_unit) * NM_unit
+        P_ortho_pt = P_ortho_vec + self.p1
+
 
         # 2) Check whether that point is within the domain of P1 - P2
-        if P_ortho[0] < min(self.p1[0], self.p2[0]) or P_ortho[0] > max(self.p1[0], self.p2[0]) or \
-           P_ortho[1] < min(self.p1[1], self.p2[1]) or P_ortho[1] > max(self.p1[1], self.p2[1]):
+        if P_ortho_pt[0] < min(self.p1[0], self.p2[0]) or P_ortho_pt[0] > max(self.p1[0], self.p2[0]) or \
+           P_ortho_pt[1] < min(self.p1[1], self.p2[1]) or P_ortho_pt[1] > max(self.p1[1], self.p2[1]):
             return False
     
         # 3) Check dist of that found point to p to see if it is within the half of the
         #    line_width.
-        P_ll = NP - P_ortho
+        P_ll = NP - P_ortho_vec
         P_ll_mag = np.linalg.norm(P_ll)
         if P_ll_mag > half:
             return False
