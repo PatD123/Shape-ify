@@ -29,7 +29,7 @@ one_hand_closed = False
 
 hand_locked = -1
 
-shape_choice = 1
+shape_choice = -1
 
 def rescale(x, y):
     disp_width = 540 - 80
@@ -69,6 +69,7 @@ def display_screen_names(image):
 
 def render(image, landmarks):
     global hand_locked
+    global shape_choice
     dis_x = 0
     dis_y = 0
     midx = -1
@@ -89,7 +90,12 @@ def render(image, landmarks):
     for screen_shape in screen_shapes:
         if landmarks:
             if screen_shape.in_rectangle(landmarks[1]):
-                shapes.clear()
+                if screen_shape.name == "Delete":
+                    shapes.clear()
+                elif screen_shape.name == "Rectangle":
+                    shape_choice = 0
+                elif screen_shape.name == "Line":
+                    shape_choice = 1
         display_shape(image, screen_shape)
     
     return image
@@ -99,9 +105,18 @@ if __name__ == "__main__":
     cap.set(cv.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, 720)
 
-    # Create the permanent screen shapes
-    del_button = Rectangle([1150, 0], [1280, 50], (255, 0, 0), 3, "Delete")
+    ############################################# Create the permanent screen shapes #############################################
+    # Delete Button
+    del_button = Rectangle([1120, 0], [1280, 50], (255, 0, 0), 3, "Delete")
     screen_shapes.append(del_button)
+
+    # Rectangle Button
+    rect_button = Rectangle([1120, 50], [1280, 100], (255, 0, 0), 3, "Rectangle")
+    screen_shapes.append(rect_button)
+
+    # Line Button
+    line_button = Rectangle([1120, 100], [1280, 150], (255, 0, 0), 3, "Line")
+    screen_shapes.append(line_button)
 
     with mp_hands.Hands(
         model_complexity=0,
