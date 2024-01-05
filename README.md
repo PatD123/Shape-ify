@@ -12,7 +12,7 @@ other kinds of shapes that the user wants (again, rectangles at the moment).
 
 ## Other features
 1. Delete Button - After creating too many shapes, it allows the user to delete all the shapes created by them.
-2. Will be able to choose between different shapes.
+2. Can now choose between different shapes (Rectangle or Line at the moment ...)
 
 ## How to run
 1. Create virtual environment
@@ -26,5 +26,5 @@ python drawRect.py
 ```
 ## New updates!! (If people are using ...)
 - Delete button has been added. Delete button deletes all shapes (Undo button?)
-- Lines have now been added. Choosing between shapes will be added, but for now, it needs to
-  be hardcoded to decide which shape the display should render when tracking hands.
+- Lines have now been added.
+- Added Line and Rectangle buttons to change what shape the user wants.
